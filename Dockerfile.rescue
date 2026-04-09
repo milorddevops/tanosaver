@@ -1,0 +1,14 @@
+FROM alpine:3.19
+
+RUN apk add --no-cache ca-certificates gcompat
+
+COPY bin/crictl /usr/local/bin/crictl
+COPY bin/ctr /usr/local/bin/ctr
+COPY bin/mc /usr/local/bin/mc
+
+RUN chmod +x /usr/local/bin/crictl /usr/local/bin/ctr /usr/local/bin/mc && \
+    crictl --version && \
+    ctr --version && \
+    mc --version
+
+ENTRYPOINT ["/bin/sh"]
