@@ -1,14 +1,26 @@
 FROM alpine:3.19
 
-RUN apk add --no-cache ca-certificates gcompat
+RUN apk add --no-cache ca-certificates gcompat curl
 
-COPY bin/crictl /usr/local/bin/crictl
-COPY bin/ctr /usr/local/bin/ctr
-COPY bin/mc /usr/local/bin/mc
+ARG CTR_VERSION=1.7.22
+ARG CRICTL_VERSION=1.31.1
+ARG MC_VERSION=RELEASE.2024-11-07T00-52-20Z
 
-RUN chmod +x /usr/local/bin/crictl /usr/local/bin/ctr /usr/local/bin/mc && \
-    crictl --version && \
+RUN ARCH=$(uname -m) && \
+    case "$ARCH" in \
+        x86_64)  GOARCH="amd64" ;; \
+        aarch64) GOARCH="arm64" ;; \
+        *)       echo "Unsupported arch: $ARCH"; exit 1 ;; \
+    esac && \
+    curl -fSL "https://github.com/containerd/containerd/releases/download/v${CTR_VERSION}/containerd-static-${CTR_VERSION}-linux-${GOARCH}.tar.gz" \
+      | tar xz -C /usr/local/bin ctr && \
+    curl -fSL "https://github.com/kubernetes-sigs/cri-tools/releases/download/v${CRICTL_VERSION}/crictl-v${CRICTL_VERSION}-linux-${GOARCH}.tar.gz" \
+      | tar xz -C /usr/local/bin crictl && \
+    curl -fSL "https://dl.min.io/client/mc/release/linux-${GOARCH}/archive/mc.${MC_VERSION}" \
+      -o /usr/local/bin/mc && \
+    chmod +x /usr/local/bin/ctr /usr/local/bin/crictl /usr/local/bin/mc && \
     ctr --version && \
+    crictl --version && \
     mc --version
 
 ENTRYPOINT ["/bin/sh"]
